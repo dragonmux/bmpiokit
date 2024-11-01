@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <mach/mach.h>
 #include <IOKit/IOTypes.h>
 #include <IOKit/IOCFBundle.h>
 #include <IOKit/usb/IOUSBLib.h>
