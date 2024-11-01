@@ -111,7 +111,7 @@ size_t requestStringLength(IOUSBDeviceInterface **const usbDevice, const uint8_t
 {
 	// Request just the first couple of bytes of the descriptor to validate and grab the length byte from
 	uint8_t data[2U] = {0U};
-	const IOUSBDevRequestTO request =
+	IOUSBDevRequestTO request =
 	{
 		.bmRequestType = USBmakebmRequestType(kUSBIn, kUSBStandard, kUSBDevice),
 		.bRequest = kUSBRqGetDescriptor,
@@ -137,7 +137,7 @@ IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const u
 	if (length > 127U)
 		return kIOReturnBadArgument;
 	uint8_t data[256U] = {0U};
-	const IOUSBDevRequestTO request =
+	IOUSBDevRequestTO request =
 	{
 		.bmRequestType = USBmakebmRequestType(kUSBIn, kUSBStandard, kUSBDevice),
 		.bRequest = kUSBRqGetDescriptor,
@@ -262,9 +262,9 @@ int main(int argc, char **argv)
 		// Check if we managed to get something for each of them, or if an error occured
 		if (manufacturer == NULL || product == NULL || serialNumber == NULL)
 		{
-			free(manufacturer);
-			free(product);
-			free(serialNumber);
+			free((void *)manufacturer);
+			free((void *)product);
+			free((void *)serialNumber);
 			printf("Failed to retreive one of the string descriptors for the device at address %u\n", busAddress);
 			// Release the device and go to the next one
 			(*usbDevice)->Release(usbDevice);
