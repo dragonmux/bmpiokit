@@ -84,7 +84,7 @@ add_project_arguments(
 )
 
 dependencies = [
-	dependency('appleframeworks', modules: ['IOKit', 'CoreFrameworks'])
+	dependency('appleframeworks', modules: ['IOKit', 'CoreFoundation'])
 ]
 
 executable(
