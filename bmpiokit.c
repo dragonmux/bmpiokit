@@ -158,8 +158,8 @@ IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const u
 		return kIOReturnError;
 
 	// Having extracted the string, check how many bytes we actually have before prepping to copy them to the result string
-	const size_t validBytes = MIN(request[0U], length * 2U);
-	memcpy(string, result + 2U, validBytes);
+	const size_t validBytes = MIN(data[0U], length * 2U);
+	memcpy(string, data + 2U, validBytes);
 	return kIOReturnSuccess;
 }
 
