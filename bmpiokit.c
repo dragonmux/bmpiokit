@@ -244,16 +244,31 @@ int main(int argc, char **argv)
 		// Get the device's address information and string descriptor indexes
 		USBDeviceAddress busAddress;
 		(*usbDevice)->GetDeviceAddress(usbDevice, &busAddress);
-		uint8_t manufactuerStringIndex;
-		(*usbDevice)->USBGetManufacturerStringIndex(usbDevice, &manufactuerStringIndex);
+		uint8_t manufacturerStringIndex;
+		(*usbDevice)->USBGetManufacturerStringIndex(usbDevice, &manufacturerStringIndex);
 		uint8_t productStringIndex;
 		(*usbDevice)->USBGetProductStringIndex(usbDevice, &productStringIndex);
 		uint8_t serialNumberStringIndex;
 		(*usbDevice)->USBGetSerialNumberStringIndex(usbDevice, &serialNumberStringIndex);
 
 		// Now extract the strings associated with those descriptors so we can display a nice entry for the device
+		const char *const manufacturer = requestStringFromDevice(usbDevice, manufacturerStringIndex);
+		const char *const product = requestStringFromDevice(usbDevice, productStringIndex);
+		const char *const serialNumber = requestStringFromDevice(usbDevice, serialNumberStringIndex);
 
-		printf("Found device at address %u with VID:PID %04x:%04x\n", busAddress, vid, pid);
+		// Check if we managed to get something for each of them, or if an error occured
+		if (manufacturer == NULL || product == NULL || serialNumber == NULL)
+		{
+			free(manufacturer);
+			free(product);
+			free(serialNumber);
+			printf("Failed to retreive one of the string descriptors for the device at address %u\n", busAddress);
+			// Release the device and go to the next one
+			(*usbDevice)->Release(usbDevice);
+			break;
+		}
+
+		printf("Found %s (%s) w/ serial %s at address %u\n", product, manufacturer, serialNumber, busAddress);
 
 		// Finish up by releasing the device
 		(*usbDevice)->Release(usbDevice);
