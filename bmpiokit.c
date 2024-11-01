@@ -107,9 +107,9 @@ IOUSBDeviceInterface **openDevice(const io_service_t usbDeviceService)
 	return deviceInterface;
 }
 
-void checkResult(const IOResult result, const char *const action)
+void checkResult(const IOReturn result, const char *const action)
 {
-	if (result != kIOResultSuccess)
+	if (result != kIOReturnSuccess)
 		printf("Error while %s (%08x): %s\n", action, result, mach_error_string(result));
 }
 
@@ -208,6 +208,7 @@ char *requestStringFromDevice(IOUSBDeviceInterface **const usbDevice, const uint
 
 	free(utf16String);
 	// XXX: Convert the UTF-16 string to a UTF-8 one and return it here
+	// utf8_encodestr()?
 	return NULL;
 }
 
