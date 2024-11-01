@@ -26,7 +26,7 @@ mach_port_t openIOKitInterface(void)
 	const kern_return_t result = IOMainPort(MACH_PORT_NULL, &ioKitPort);
 	if (result != KERN_SUCCESS || ioKitPort == MACH_PORT_NULL)
 	{
-		printf("Failed to initiate comms with IOKit: %08x\n", result);
+		printf("Failed to initiate comms with IOKit (%08x): %s\n", result, mach_error_string(result));
 		return MACH_PORT_NULL;
 	}
 	return ioKitPort;
@@ -62,7 +62,7 @@ io_iterator_t discoverProbes(const mach_port_t ioKitPort)
 	const kern_return_t result = IOServiceGetMatchingServices(ioKitPort, deviceMatchingDict, &matches);
 	if (result != KERN_SUCCESS)
 	{
-		printf("Failed to run USB device matching: %08x\n", result);
+		printf("Failed to run USB device matching: (%08x): %s\n", result, mach_error_string(result));
 		return MACH_PORT_NULL;
 	}
 
@@ -86,7 +86,7 @@ IOUSBDeviceInterface **openDevice(const io_service_t usbDeviceService)
 		// Check how we got on, bailing if anything went wrong
 		if (result != kIOReturnSuccess || pluginInterface == NULL)
 		{
-			printf("Failed to create client plug-in binding: %08x\n", result);
+			printf("Failed to create client plug-in binding: (%08x): %s\n", result, mach_error_string(result));
 			return NULL;
 		}
 	}
@@ -193,7 +193,7 @@ char *requestStringFromDevice(IOUSBDeviceInterface **const usbDevice, const uint
 	{
 		// That failed somehow - display it and translate to the known unknown string
 		free(utf16String);
-		printf("Failed to retreive string descriptor %u: %08x\n", index, result);
+		printf("Failed to retreive string descriptor %u (%08x): %s\n", index, result, mach_error_string(result));
 		return strdup("---");
 	}
 
