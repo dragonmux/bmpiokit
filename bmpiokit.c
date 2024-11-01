@@ -63,6 +63,44 @@ io_iterator_t discoverProbes(const mach_port_t ioKitPort)
 	return matches;
 }
 
+const IOUSBDeviceInterface **openDevice(const io_service_t usbDeviceService)
+{
+	// Check that the service is valid
+	if (usbDeviceService == MACH_PORT_NULL)
+		return NULL;
+
+	// As it is, create a CoreFoundation plug-in client for the device sos we can get a step closer to accessing it
+	IOCFPlugInInterface **pluginInterface = NULL;
+	{
+		SInt32 score; // XXX: No idea what this is/does - does it matter? Can we skip it? etc.. fruitco doesn't document it.
+		const kern_result_t result = IOCreatePlugInInterfaceForService(usbDeviceService,
+			kIOUSBDeviceUserClientTypeID, kIOCFPlugInInterfaceID, &pluginInterface, &score);
+		// Clean up now we're done with the device
+		IOObjectRelease(usbDeviceService);
+		// Check how we got on, bailing if anything went wrong
+		if (result != kIOReturnSuccess || pluginInterface == NULL)
+		{
+			printf("Failed to create client plug-in binding: %08x\n", result);
+			return NULL;
+		}
+	}
+
+	// Now we've got the stepping stone for this, create the actual device interface instance for the device
+	IOUSBDeviceInterface **deviceInterface = NULL;
+	const HRESULT result = (*pluginInterface)->QueryInterface(pluginInterface,
+		CFUUIDGetUUIDBytes(kIOUSBDeviceInterfaceID), (void **)&deviceInterface);
+	// Clean up now we're done with the stepping stone plugin client interface
+	(*pluginInterface)->Release(pluginInterface);
+	// See how things went, bailing if that didn't work
+	if (result || deviceInterface == NULL)
+	{
+		printf("Failed to create an interface to the device: %08x\n", (int)result);
+		return NULL;
+	}
+
+	return deviceInterface;
+}
+
 int main(int argc, char **argv)
 {
 	(void)argc;
@@ -89,9 +127,12 @@ int main(int argc, char **argv)
 	// Loop through all the devices matched, poking them one at a time
 	for (; IOIteratorIsValid(deviceIterator); )
 	{
-		const io_service_t usbDevice = IOIteratorNext(deviceIterator);
-		// Clean up now we're done with the device
-		IOObjectRelease(usbDevice);
+		const IOUSBDeviceInterface **usbDevice = openDevice(IOIteratorNext(deviceIterator));
+		if (usbDevice == NULL)
+			break;
+
+		// Finish up by releasing the device
+		(*usbDevice)->Release(usbDevice);
 	}
 
 	return 0;
