@@ -254,10 +254,16 @@ int main(int argc, char **argv)
 		uint8_t serialNumberStringIndex;
 		(*usbDevice)->USBGetSerialNumberStringIndex(usbDevice, &serialNumberStringIndex);
 
+		// Open the device so we can make a few requests
+		(*usbDevice)->USBDeviceOpen(usbDevice);
+
 		// Now extract the strings associated with those descriptors so we can display a nice entry for the device
 		const char *const manufacturer = requestStringFromDevice(usbDevice, manufacturerStringIndex);
 		const char *const product = requestStringFromDevice(usbDevice, productStringIndex);
 		const char *const serialNumber = requestStringFromDevice(usbDevice, serialNumberStringIndex);
+
+		// Now we're done with the requests, close the device again
+		(*usbDevice)->USBDeviceClose(usbDevice);
 
 		// Check if we managed to get something for each of them, or if an error occured
 		if (manufacturer == NULL || product == NULL || serialNumber == NULL)
