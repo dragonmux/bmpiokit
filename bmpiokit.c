@@ -278,9 +278,12 @@ int main(int argc, char **argv)
 		// Check if we managed to get something for each of them, or if an error occured
 		if (manufacturer == NULL || product == NULL || serialNumber == NULL)
 		{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
 			free((void *)manufacturer);
 			free((void *)product);
 			free((void *)serialNumber);
+#pragma GCC diagnostic pop
 			printf("Failed to retreive one of the string descriptors for the device at address %u\n", busAddress);
 			// Release the device and go to the next one
 			(*usbDevice)->Release(usbDevice);
