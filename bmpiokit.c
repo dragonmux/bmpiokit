@@ -12,8 +12,8 @@
 #include <IOKit/usb/IOUSBLib.h>
 #include <IOKit/IOCFPlugIn.h>
 
-static SInt16 bmdVID = 0x1d50;
-static SInt16 bmdPID = 0x6018;
+static uint16_t bmdVID = 0x1d50U;
+static uint16_t bmdPID = 0x6018U;
 
 mach_port_t openIOKitInterface(void)
 {
@@ -188,12 +188,29 @@ int main(int argc, char **argv)
 		if (usbDevice == NULL)
 			break;
 
-		USBDeviceAddress busAddress;
-		(*usbDevice)->GetDeviceAddress(usbDevice, &busAddress);
+		// Check that the VID:PID for the device are correct
 		uint16_t vid;
 		(*usbDevice)->GetDeviceVendor(usbDevice, &vid);
 		uint16_t pid;
 		(*usbDevice)->GetDeviceProduct(usbDevice, &pid);
+		if (vid != bmdVID || pid != bmdPID)
+		{
+			// Release the device and go to the next one
+			(*usbDevice)->Release(usbDevice);
+			break;
+		}
+
+		// Get the device's address information and string descriptor indexes
+		USBDeviceAddress busAddress;
+		(*usbDevice)->GetDeviceAddress(usbDevice, &busAddress);
+		uint8_t manufactuerStringIndex;
+		(*usbDevice)->USBGetManufacturerStringIndex(usbDevice, &manufactuerStringIndex);
+		uint8_t productStringIndex;
+		(*usbDevice)->USBGetProductStringIndex(usbDevice, &productStringIndex);
+		uint8_t serialNumberStringIndex;
+		(*usbDevice)->USBGetSerialNumberStringIndex(usbDevice, &serialNumberStringIndex);
+
+		// Now extract the strings associated with those descriptors so we can display a nice entry for the device
 
 		printf("Found device at address %u with VID:PID %04x:%04x\n", busAddress, vid, pid);
 
