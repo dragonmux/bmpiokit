@@ -18,6 +18,8 @@ static uint16_t bmdPID = 0x6018U;
 
 typedef uint16_t char16_t;
 
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+
 mach_port_t openIOKitInterface(void)
 {
 	mach_port_t ioKitPort = MACH_PORT_NULL;
@@ -122,8 +124,8 @@ size_t requestStringLength(IOUSBDeviceInterface **const usbDevice, const uint8_t
 	};
 
 	// Make the request, check that it was successful, and that we got a string descriptor back
-	const IOReturn result = (*usbDevice)->DeviceRequestTO(device, &request);
-	if (result != kIOSuccess || data[1U] != kUSBStringDesc)
+	const IOReturn result = (*usbDevice)->DeviceRequestTO(usbDevice, &request);
+	if (result != kIOReturnSuccess || data[1U] != kUSBStringDesc)
 		return 0U;
 	// Convert the length field from a length in bytes to a length in UTF-16 code units
 	return (data[0U] - 2U) / 2U;
@@ -142,15 +144,15 @@ IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const u
 		.wValue = kUSBStringDesc,
 		.wIndex = index,
 		// Convert the length in UTF-16 code units to a length in bytes and include the 2 byte descriptor header
-		.wLength = (length * 2U) + 2U,
+		.wLength = (uint16_t)((length * 2U) + 2U),
 		.pData = data,
 		.noDataTimeout = 20,
 		.completionTimeout = 100,
 	};
 
 	// Make the request, check that it was successful, and that we got a string descriptor back
-	const IOReturn result = (*usbDevice)->DeviceRequestTO(device, &request);
-	if (result != kIOSuccess)
+	const IOReturn result = (*usbDevice)->DeviceRequestTO(usbDevice, &request);
+	if (result != kIOReturnSuccess)
 		return result;
 	if (data[1U] != kUSBStringDesc)
 		return kIOReturnError;
@@ -158,7 +160,7 @@ IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const u
 	// Having extracted the string, check how many bytes we actually have before prepping to copy them to the result string
 	const size_t validBytes = MIN(request[0U], length * 2U);
 	memcpy(string, result + 2U, validBytes);
-	return kIOResultSuccess;
+	return kIOReturnSuccess;
 }
 
 char *requestStringFromDevice(IOUSBDeviceInterface **const usbDevice, const uint8_t index)
@@ -187,7 +189,7 @@ char *requestStringFromDevice(IOUSBDeviceInterface **const usbDevice, const uint
 
 	// Now extract the string itself
 	const IOResult result = requestStringDescriptor(usbDevice, index, utf16String, length);
-	if (result != kIOResultSuccess)
+	if (result != kIOReturnSuccess)
 	{
 		// That failed somehow - display it and translate to the known unknown string
 		free(utf16String);
