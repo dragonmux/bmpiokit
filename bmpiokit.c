@@ -188,7 +188,7 @@ char *requestStringFromDevice(IOUSBDeviceInterface **const usbDevice, const uint
 	}
 
 	// Now extract the string itself
-	const IOResult result = requestStringDescriptor(usbDevice, index, utf16String, length);
+	const IOReturn result = requestStringDescriptor(usbDevice, index, utf16String, length);
 	if (result != kIOReturnSuccess)
 	{
 		// That failed somehow - display it and translate to the known unknown string
