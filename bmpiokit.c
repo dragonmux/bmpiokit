@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <uchar.h>
 #include <mach/mach.h>
 #include <IOKit/IOTypes.h>
 #include <IOKit/IOCFBundle.h>
@@ -99,6 +100,62 @@ IOUSBDeviceInterface **openDevice(const io_service_t usbDeviceService)
 	}
 
 	return deviceInterface;
+}
+
+uint8_t requestStringLength(IOUSBDeviceInterface **const usbDevice, const uint8_t index)
+{
+	// Request just the first couple of bytes of the descriptor to validate and grab the length byte from
+	uint8_t data[2U] = {0U};
+	const IOUSBDevRequestTO request =
+	{
+		.bmRequestType = USBmakebmRequestType(kUSBIn, kUSBStandard, kUSBDevice),
+		.bRequest = kUSBRqGetDescriptor,
+		.wValue = kUSBStringDesc,
+		.wIndex = index,
+		.wLength = sizeof(data),
+		.pData = data,
+		.noDataTimeout = 20,
+		.completionTimeout = 100,
+	};
+
+	// Make the request, check that it was successful, and that we got a string descriptor back
+	const IOReturn result = (*usbDevice)->DeviceRequestTO(device, &request);
+	if (result != kIOSuccess || data[1U] != kUSBStringDesc)
+		return 0U;
+	// Convert the length field from a length in bytes to a length in UTF-16 code units
+	return (data[0U] - 2U) / 2U;
+}
+
+IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const uint8_t index, char16_t *const string, const uint8_t length)
+{
+	// Check that the string length isn't too long, and bail if it is
+	if (length > 127U)
+		return kIOReturnBadArgument;
+	uint8_t data[256U] = {0U};
+	const IOUSBDevRequestTO request =
+	{
+		.bmRequestType = USBmakebmRequestType(kUSBIn, kUSBStandard, kUSBDevice),
+		.bRequest = kUSBRqGetDescriptor,
+		.wValue = kUSBStringDesc,
+		.wIndex = index,
+		// Convert the length in UTF-16 code units to a length in bytes and include the 2 byte descriptor header
+		.wLength = (length * 2U) + 2U,
+		.pData = data,
+		.noDataTimeout = 20,
+		.completionTimeout = 100,
+	};
+
+	// Make the request, check that it was successful, and that we got a string descriptor back
+	const IOReturn result = (*usbDevice)->DeviceRequestTO(device, &request);
+	if (result != kIOSuccess)
+		return result;
+	if (data[1U] != kUSBStringDesc)
+		return kIOReturnError;
+
+	/* Having extracted the string, check how many bytes we actually have before prepping to copy them to the result string */
+	const uint8_t validBytes = MIN(request[0U], length * 2U);
+	memcpy(string, result + 2U, validBytes);
+	return kIOResultSuccess;
 }
 
 int main(int argc, char **argv)
