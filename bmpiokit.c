@@ -4,7 +4,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <uchar.h>
 #include <mach/mach.h>
 #include <IOKit/IOTypes.h>
@@ -102,7 +104,7 @@ IOUSBDeviceInterface **openDevice(const io_service_t usbDeviceService)
 	return deviceInterface;
 }
 
-uint8_t requestStringLength(IOUSBDeviceInterface **const usbDevice, const uint8_t index)
+size_t requestStringLength(IOUSBDeviceInterface **const usbDevice, const uint8_t index)
 {
 	// Request just the first couple of bytes of the descriptor to validate and grab the length byte from
 	uint8_t data[2U] = {0U};
@@ -126,7 +128,7 @@ uint8_t requestStringLength(IOUSBDeviceInterface **const usbDevice, const uint8_
 	return (data[0U] - 2U) / 2U;
 }
 
-IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const uint8_t index, char16_t *const string, const uint8_t length)
+IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const uint8_t index, char16_t *const string, const size_t length)
 {
 	// Check that the string length isn't too long, and bail if it is
 	if (length > 127U)
@@ -152,10 +154,49 @@ IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const u
 	if (data[1U] != kUSBStringDesc)
 		return kIOReturnError;
 
-	/* Having extracted the string, check how many bytes we actually have before prepping to copy them to the result string */
-	const uint8_t validBytes = MIN(request[0U], length * 2U);
+	// Having extracted the string, check how many bytes we actually have before prepping to copy them to the result string
+	const size_t validBytes = MIN(request[0U], length * 2U);
 	memcpy(string, result + 2U, validBytes);
 	return kIOResultSuccess;
+}
+
+char *requestStringFromDevice(IOUSBDeviceInterface **const usbDevice, const uint8_t index)
+{
+	// If the string index is invalid (points at the language descriptor), translate it to a known unknown string
+	if (index == 0U)
+		return strdup("---");
+
+	// Otherwise, ask the device how long the string actually is
+	const size_t length = requestStringLength(usbDevice, index);
+	if (length == 0U)
+	{
+		// We failed to get the string's length for some reason, so display an error and turn it into the known unknown string
+		printf("Failed to retreive string length for string descriptor %u\n", index);
+		return strdup("---");
+	}
+
+	// Next, allocate enough storage for the UTF-16 version of the string, including a NUL terminator on the end
+	char16_t *utf16String = calloc(sizeof(char16_t), length + 1U);
+	if (utf16String == NULL)
+	{
+		// If that didn't work, fail more violently as we OOM'd
+		printf("Failed to allocate storage for string from string descriptor %u\n", index);
+		return NULL;
+	}
+
+	// Now extract the string itself
+	const IOResult result = requestStringDescriptor(usbDevice, index, utf16String, length);
+	if (result != kIOResultSuccess)
+	{
+		// That failed somehow - display it and translate to the known unknown string
+		free(utf16String);
+		printf("Failed to retreive string descriptor %u: %08x\n", index, result);
+		return strdup("---");
+	}
+
+	free(utf16String);
+	// XXX: Convert the UTF-16 string to a UTF-8 one and return it here
+	return NULL;
 }
 
 int main(int argc, char **argv)
