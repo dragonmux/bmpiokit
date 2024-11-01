@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <uchar.h>
 #include <mach/mach.h>
 #include <IOKit/IOTypes.h>
 #include <IOKit/IOCFBundle.h>
@@ -16,6 +15,8 @@
 
 static uint16_t bmdVID = 0x1d50U;
 static uint16_t bmdPID = 0x6018U;
+
+typedef uint16_t char16_t;
 
 mach_port_t openIOKitInterface(void)
 {
