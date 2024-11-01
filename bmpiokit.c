@@ -107,6 +107,12 @@ IOUSBDeviceInterface **openDevice(const io_service_t usbDeviceService)
 	return deviceInterface;
 }
 
+void checkResult(const IOResult result, const char *const action)
+{
+	if (result != kIOResultSuccess)
+		printf("Error while %s (%08x): %s\n", action, result, mach_error_string(result));
+}
+
 size_t requestStringLength(IOUSBDeviceInterface **const usbDevice, const uint8_t index)
 {
 	// Request just the first couple of bytes of the descriptor to validate and grab the length byte from
@@ -126,7 +132,10 @@ size_t requestStringLength(IOUSBDeviceInterface **const usbDevice, const uint8_t
 	// Make the request, check that it was successful, and that we got a string descriptor back
 	const IOReturn result = (*usbDevice)->DeviceRequestTO(usbDevice, &request);
 	if (result != kIOReturnSuccess || data[1U] != kUSBStringDesc)
+	{
+		checkResult(result, "requesting string descriptor length");
 		return 0U;
+	}
 	// Convert the length field from a length in bytes to a length in UTF-16 code units
 	return (data[0U] - 2U) / 2U;
 }
@@ -246,16 +255,16 @@ int main(int argc, char **argv)
 
 		// Get the device's address information and string descriptor indexes
 		USBDeviceAddress busAddress;
-		(*usbDevice)->GetDeviceAddress(usbDevice, &busAddress);
+		checkResult((*usbDevice)->GetDeviceAddress(usbDevice, &busAddress), "grabbing device address");
 		uint8_t manufacturerStringIndex;
-		(*usbDevice)->USBGetManufacturerStringIndex(usbDevice, &manufacturerStringIndex);
+		checkResult((*usbDevice)->USBGetManufacturerStringIndex(usbDevice, &manufacturerStringIndex), "grabbing manufacturer string index");
 		uint8_t productStringIndex;
-		(*usbDevice)->USBGetProductStringIndex(usbDevice, &productStringIndex);
+		checkResult((*usbDevice)->USBGetProductStringIndex(usbDevice, &productStringIndex), "grabbing product string index");
 		uint8_t serialNumberStringIndex;
-		(*usbDevice)->USBGetSerialNumberStringIndex(usbDevice, &serialNumberStringIndex);
+		checkResult((*usbDevice)->USBGetSerialNumberStringIndex(usbDevice, &serialNumberStringIndex), "grabbing serial number string index");
 
 		// Open the device so we can make a few requests
-		(*usbDevice)->USBDeviceOpen(usbDevice);
+		checkResult((*usbDevice)->USBDeviceOpen(usbDevice), "opening USB device");
 
 		// Now extract the strings associated with those descriptors so we can display a nice entry for the device
 		const char *const manufacturer = requestStringFromDevice(usbDevice, manufacturerStringIndex);
@@ -263,7 +272,7 @@ int main(int argc, char **argv)
 		const char *const serialNumber = requestStringFromDevice(usbDevice, serialNumberStringIndex);
 
 		// Now we're done with the requests, close the device again
-		(*usbDevice)->USBDeviceClose(usbDevice);
+		checkResult((*usbDevice)->USBDeviceClose(usbDevice), "closing USB device");
 
 		// Check if we managed to get something for each of them, or if an error occured
 		if (manufacturer == NULL || product == NULL || serialNumber == NULL)
