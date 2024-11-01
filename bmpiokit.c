@@ -131,6 +131,15 @@ int main(int argc, char **argv)
 		if (usbDevice == NULL)
 			break;
 
+		USBDeviceAddress busAddress;
+		(*usbDevice)->GetDeviceAddress(usbDevice, &busAddress);
+		uint16_t vid;
+		(*usbDevice)->GetDeviceVendor(usbDevice, &vid);
+		uint16_t pid;
+		(*usbDevice)->GetDeviceProduct(usbDevice, &pid);
+
+		printf("Found device at address %u with VID:PID %04x:%04x\n", busAddress, vid, pid);
+
 		// Finish up by releasing the device
 		(*usbDevice)->Release(usbDevice);
 	}
