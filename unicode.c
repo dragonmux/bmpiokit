@@ -8,14 +8,14 @@
 #include <inttypes.h>
 #include "unicode.h"
 
-inline uint16_t safeIndex(const char16_t *const string, const size_t index, const size_t length)
+static inline uint16_t safeIndex(const char16_t *const string, const size_t index, const size_t length)
 {
 	if (index >= length)
 		return UINT16_MAX;
 	return (uint16_t)string[index];
 }
 
-size_t countUnits(const char16_t *const string, const size_t length)
+static size_t countUnits(const char16_t *const string, const size_t length)
 {
 	size_t count = 0U;
 	// Loop through all the code units in the string
@@ -104,4 +104,5 @@ char *utf8FromUtf16(const char16_t *const utf16String, const size_t utf16Length)
 			}
 		}
 	}
+	return result;
 }
