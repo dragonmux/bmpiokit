@@ -116,28 +116,28 @@ void checkResult(const IOReturn result, const char *const action)
 size_t requestStringLength(IOUSBDeviceInterface **const usbDevice, const uint8_t index)
 {
 	// Request just the first couple of bytes of the descriptor to validate and grab the length byte from
-	uint8_t data[2U] = {0U};
+	IOUSBDescriptorHeader header = {0U};
 	IOUSBDevRequestTO request =
 	{
 		.bmRequestType = USBmakebmRequestType(kUSBIn, kUSBStandard, kUSBDevice),
 		.bRequest = kUSBRqGetDescriptor,
-		.wValue = kUSBStringDesc,
-		.wIndex = index,
-		.wLength = sizeof(data),
-		.pData = data,
+		.wValue = (uint16_t)(kUSBStringDesc << 8U) | index,
+		.wIndex = 0U,
+		.wLength = sizeof(header),
+		.pData = &header,
 		.noDataTimeout = 20,
 		.completionTimeout = 100,
 	};
 
 	// Make the request, check that it was successful, and that we got a string descriptor back
 	const IOReturn result = (*usbDevice)->DeviceRequestTO(usbDevice, &request);
-	if (result != kIOReturnSuccess || data[1U] != kUSBStringDesc)
+	if (result != kIOReturnSuccess || header.bDescriptorType != kUSBStringDesc)
 	{
 		checkResult(result, "requesting string descriptor length");
 		return 0U;
 	}
 	// Convert the length field from a length in bytes to a length in UTF-16 code units
-	return (data[0U] - 2U) / 2U;
+	return (header.bLength - 2U) / 2U;
 }
 
 IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const uint8_t index, char16_t *const string, const size_t length)
@@ -150,8 +150,8 @@ IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const u
 	{
 		.bmRequestType = USBmakebmRequestType(kUSBIn, kUSBStandard, kUSBDevice),
 		.bRequest = kUSBRqGetDescriptor,
-		.wValue = kUSBStringDesc,
-		.wIndex = index,
+		.wValue = (uint16_t)(kUSBStringDesc << 8U) | index,
+		.wIndex = 0U,
 		// Convert the length in UTF-16 code units to a length in bytes and include the 2 byte descriptor header
 		.wLength = (uint16_t)((length * 2U) + 2U),
 		.pData = data,
