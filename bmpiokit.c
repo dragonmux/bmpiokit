@@ -122,7 +122,7 @@ size_t requestStringLength(IOUSBDeviceInterface **const usbDevice, const uint8_t
 		.bmRequestType = USBmakebmRequestType(kUSBIn, kUSBStandard, kUSBDevice),
 		.bRequest = kUSBRqGetDescriptor,
 		.wValue = (uint16_t)(kUSBStringDesc << 8U) | index,
-		.wIndex = 0x0904U,
+		.wIndex = 0x0409U,
 		.wLength = sizeof(header),
 		.pData = &header,
 		.noDataTimeout = 20,
@@ -151,7 +151,7 @@ IOReturn requestStringDescriptor(IOUSBDeviceInterface **const usbDevice, const u
 		.bmRequestType = USBmakebmRequestType(kUSBIn, kUSBStandard, kUSBDevice),
 		.bRequest = kUSBRqGetDescriptor,
 		.wValue = (uint16_t)(kUSBStringDesc << 8U) | index,
-		.wIndex = 0x0904U,
+		.wIndex = 0x0409U,
 		// Convert the length in UTF-16 code units to a length in bytes and include the 2 byte descriptor header
 		.wLength = (uint16_t)((length * 2U) + 2U),
 		.pData = data,
