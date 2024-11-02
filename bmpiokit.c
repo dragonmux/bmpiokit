@@ -13,10 +13,10 @@
 #include <IOKit/usb/IOUSBLib.h>
 #include <IOKit/IOCFPlugIn.h>
 
+#include "unicode.h"
+
 static uint16_t bmdVID = 0x1d50U;
 static uint16_t bmdPID = 0x6018U;
-
-typedef uint16_t char16_t;
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
@@ -206,10 +206,10 @@ char *requestStringFromDevice(IOUSBDeviceInterface **const usbDevice, const uint
 		return strdup("---");
 	}
 
+	// Convert the UTF-16 string descriptor string to UTF-8, then clean up and return it
+	char *utf8String = utf8FromUtf16(utf16String, length + 1U);
 	free(utf16String);
-	// XXX: Convert the UTF-16 string to a UTF-8 one and return it here
-	// utf8_encodestr()?
-	return NULL;
+	return utf8String;
 }
 
 int main(int argc, char **argv)
