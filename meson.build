@@ -87,9 +87,14 @@ dependencies = [
 	dependency('appleframeworks', modules: ['IOKit', 'CoreFoundation'])
 ]
 
+bmpiokitSrc = [
+	'bmpiokit.c',
+	'unicode.c',
+]
+
 executable(
 	'bmpiokit',
-	'bmpiokit.c',
+	bmpiokitSrc,
 	dependencies: dependencies,
 	gnu_symbol_visibility: 'inlineshidden',
 )
